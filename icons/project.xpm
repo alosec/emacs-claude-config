@@ -1,0 +1,25 @@
+/* XPM */
+static char *project[] = {
+/* columns rows colors chars-per-pixel */
+"16 16 3 1 ",
+"  c None",
+". c #000000",
+"X c #0080FF",
+/* pixels */
+"                ",
+"  ............  ",
+"  .XXXXXXXXXX.  ",
+"  .X........X.  ",
+"  .X.XXXXXX.X.  ",
+"  .X.X....X.X.  ",
+"  .X.X.XX.X.X.  ",
+"  .X.X.XX.X.X.  ",
+"  .X.X....X.X.  ",
+"  .X.XXXXXX.X.  ",
+"  .X........X.  ",
+"  .XXXXXXXXXX.  ",
+"  ............  ",
+"                ",
+"                ",
+"                "
+};

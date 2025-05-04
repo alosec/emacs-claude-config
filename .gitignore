@@ -1,0 +1,44 @@
+# Compiled files
+*.elc
+
+# Package installation directory
+elpa/
+
+# Auto-save files
+auto-save-list/
+
+# Cache directories
+eln-cache/
+
+# Recent files
+recentf
+
+# Backup files
+*~
+\#*\#
+.\#*
+*.bak
+
+# Bookmark data
+bookmarks
+
+# Transient files
+transient/
+
+# Network security
+network-security.data
+
+# Projectile files
+projectile-bookmarks.eld
+
+# Custom file (if separate)
+custom.el
+
+# URL directory
+url/
+
+# Eshell directory
+eshell/
+
+# Backup files for git
+.git/
