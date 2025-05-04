@@ -274,8 +274,15 @@
 ;; Install and configure org-super-agenda
 (use-package org-super-agenda
   :ensure t
+  :after org
+  :init
+  ;; Ensure package is installed
+  (unless (package-installed-p 'org-super-agenda)
+    (package-refresh-contents)
+    (package-install 'org-super-agenda))
+  
   :config
-  ;; Enable org-super-agenda
+  ;; Enable org-super-agenda mode
   (org-super-agenda-mode)
   
   ;; Define our three configurations
@@ -342,13 +349,12 @@
   (setq org-super-agenda-groups org-super-agenda-groups-project-focused)
   
   ;; Custom faces for org-super-agenda headers
-  (set-face-attribute 'org-super-agenda-header nil
-                      :inherit 'default
-                      :height 1.2
-                      :weight 'bold
-                      :foreground "dodger blue"
-                      :background "#f0f0f0")
-                      
+  (custom-set-faces
+   '(org-super-agenda-header 
+     ((t (:inherit default :height 1.2 :weight bold 
+                   :foreground "dodger blue" :background "#f0f0f0"
+                   :box (:line-width 2 :color "grey75" :style released-button))))))
+  
   ;; Function to toggle between the three views
   (defun alex-org-super-agenda-toggle-view ()
     "Cycle between different org-super-agenda view configurations."
@@ -370,6 +376,15 @@
     (when (get-buffer "*Org Agenda*")
       (with-current-buffer "*Org Agenda*"
         (org-agenda-redo))))
+  
+  ;; Create custom agenda commands for each view
+  (setq org-agenda-custom-commands
+        '(("p" "Project-Focused View"
+           ((agenda "" ((org-super-agenda-groups org-super-agenda-groups-project-focused)))))
+          ("c" "Context-Based View"
+           ((agenda "" ((org-super-agenda-groups org-super-agenda-groups-context-based)))))
+          ("t" "Time-Oriented View"
+           ((agenda "" ((org-super-agenda-groups org-super-agenda-groups-time-oriented)))))))
   
   ;; Define key bindings for org-super-agenda views
   (global-set-key (kbd "C-c a s") 'org-super-agenda-header-map)

@@ -165,5 +165,59 @@
   (define-key org-agenda-mode-map "h" 'alex-org-agenda-priority)
   (define-key org-agenda-mode-map "n" 'alex-org-agenda-next))
 
+;;; Org-super-agenda integration
+(with-eval-after-load 'org-super-agenda
+  
+  ;; Function to show the Project-Focused super-agenda view
+  (defun alex-org-super-agenda-project-view ()
+    "Show the Project-Focused super-agenda view."
+    (interactive)
+    (if (fboundp 'org-super-agenda-mode)
+        (progn
+          (setq org-super-agenda-groups 
+                (symbol-value 'org-super-agenda-groups-project-focused))
+          (org-agenda nil "a")
+          (message "Project-Focused View"))
+      (message "org-super-agenda is not loaded")))
+  
+  ;; Function to show the Context-Based super-agenda view
+  (defun alex-org-super-agenda-context-view ()
+    "Show the Context-Based super-agenda view."
+    (interactive)
+    (if (fboundp 'org-super-agenda-mode)
+        (progn
+          (setq org-super-agenda-groups 
+                (symbol-value 'org-super-agenda-groups-context-based))
+          (org-agenda nil "a")
+          (message "Context-Based View"))
+      (message "org-super-agenda is not loaded")))
+  
+  ;; Function to show the Time-Oriented super-agenda view
+  (defun alex-org-super-agenda-time-view ()
+    "Show the Time-Oriented super-agenda view."
+    (interactive)
+    (if (fboundp 'org-super-agenda-mode)
+        (progn
+          (setq org-super-agenda-groups 
+                (symbol-value 'org-super-agenda-groups-time-oriented))
+          (org-agenda nil "a")
+          (message "Time-Oriented View"))
+      (message "org-super-agenda is not loaded")))
+  
+  ;; Add keybindings for super-agenda views
+  (global-set-key (kbd "C-c a 1") 'alex-org-super-agenda-project-view)
+  (global-set-key (kbd "C-c a 2") 'alex-org-super-agenda-context-view)
+  (global-set-key (kbd "C-c a 3") 'alex-org-super-agenda-time-view)
+  
+  ;; Custom format for super-agenda display
+  (setq org-super-agenda-header-separator "─────────────────\n")
+  (setq org-super-agenda-header-prefix "⦿ ")
+  
+  ;; Update existing agenda commands to use super-agenda
+  (add-to-list 'org-agenda-custom-commands
+               '("S" "Super Agenda"
+                 ((agenda "" ((org-super-agenda-groups
+                               (symbol-value 'org-super-agenda-groups-project-focused))))))))
+
 (provide 'alex-org-agenda)
 ;;; alex-org-agenda.el ends here
