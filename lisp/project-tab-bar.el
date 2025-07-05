@@ -206,8 +206,8 @@
        
        ;; No existing sessions - offer to create one
        (t
-        (when (y-or-n-p (format "No Claude sessions found for %s. Start new session? "
-                                (project-tab-bar--get-project-name project-root)))
+        (when (yes-or-no-p (format "No Claude sessions found for %s. Start new session? "
+                                   (project-tab-bar--get-project-name project-root)))
           (let ((default-directory project-root))
             ;; Start new claude session in this project
             (claude-code)
