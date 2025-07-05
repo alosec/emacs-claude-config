@@ -153,9 +153,12 @@
   "Switch to PROJECT-ROOT and activate associated Claude sessions."
   (interactive)
   (when (file-directory-p project-root)
-    ;; Switch to project using projectile
-    (let ((default-directory project-root))
-      (projectile-switch-project-by-name project-root))
+    ;; Switch to project directory directly (avoid triggering helm-projectile)
+    (setq default-directory project-root)
+    
+    ;; Ensure projectile knows about this project without triggering switch action
+    (when (featurep 'projectile)
+      (projectile-add-known-project project-root))
     
     ;; Update current project
     (setq project-tab-bar--current-project project-root)
