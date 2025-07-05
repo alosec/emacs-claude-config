@@ -43,3 +43,4 @@ eshell/
 # Backup files for git
 .git/
 site-lisp/claude-code/
+tramp
