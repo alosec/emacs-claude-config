@@ -85,6 +85,9 @@
 ;; Add lisp directory to load path
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
+;; Load project tab bar system
+(require 'project-tab-bar)
+
 ;; Org-mode configuration - Modular enhanced version
 (use-package org
   :ensure t
@@ -436,6 +439,9 @@
   :bind-keymap
   ;; Bind the entire command map to C-c c prefix
   ("C-c c" . claude-code-command-map))
+
+;; Enable project tab bar
+(project-tab-bar-mode 1)
 
 ;; Custom-set-variables maintained from original ~/.emacs
 (custom-set-variables
