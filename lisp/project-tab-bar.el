@@ -186,33 +186,37 @@
   (when (featurep 'claude-code)
     (let ((claude-buffers (claude-code--find-claude-buffers-for-directory project-root)))
       (cond
-       ;; Multiple sessions - show them all or prompt for selection
+       ;; Multiple sessions - switch to default session
        ((> (length claude-buffers) 1)
         (message "Found %d Claude sessions for %s" 
                  (length claude-buffers)
                  (project-tab-bar--get-project-name project-root))
-        ;; Display the first (default) session and show others in background
+        ;; Clear windows and switch to the first (default) session
         (let ((default-session (car claude-buffers)))
-          (display-buffer default-session)
+          (delete-other-windows)
+          (switch-to-buffer default-session)
           (message "Showing default session. Use C-c c B to switch between %d sessions"
                    (length claude-buffers))))
        
-       ;; Single session - display it
+       ;; Single session - display it and switch to it
        ((= (length claude-buffers) 1)
         (let ((session-buffer (car claude-buffers)))
-          (display-buffer session-buffer)
+          ;; Clear current window configuration and switch to Claude session
+          (delete-other-windows)
+          (switch-to-buffer session-buffer)
           (message "Activated Claude session for %s" 
                    (project-tab-bar--get-project-name project-root))))
        
        ;; No existing sessions - offer to create one
        (t
-        (when (yes-or-no-p (format "No Claude sessions found for %s. Start new session? "
-                                   (project-tab-bar--get-project-name project-root)))
-          (let ((default-directory project-root))
-            ;; Start new claude session in this project
-            (claude-code)
-            (message "Started new Claude session for %s" 
-                     (project-tab-bar--get-project-name project-root))))))
+        (let ((use-dialog-box nil))  ; Force minibuffer instead of GUI dialog
+          (when (yes-or-no-p (format "No Claude sessions found for %s. Start new session? "
+                                     (project-tab-bar--get-project-name project-root)))
+            (let ((default-directory project-root))
+              ;; Start new claude session in this project
+              (claude-code)
+              (message "Started new Claude session for %s" 
+                       (project-tab-bar--get-project-name project-root)))))))
       
       ;; Always refresh tab bar to update session indicators
       (project-tab-bar--refresh))))
