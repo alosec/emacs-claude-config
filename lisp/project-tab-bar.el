@@ -82,7 +82,9 @@
 
 (defun project-tab-bar--has-claude-session-p (project-root)
   "Check if PROJECT-ROOT has an associated Claude session."
-  (gethash project-root project-tab-bar--project-sessions))
+  (when (featurep 'claude-code)
+    (let ((claude-buffers (claude-code--find-claude-buffers-for-directory project-root)))
+      (length claude-buffers))))
 
 (defun project-tab-bar--update-project-list ()
   "Update the list of projects for tab display."
@@ -111,7 +113,12 @@
          (has-session (project-tab-bar--has-claude-session-p project-root))
          (face (if is-active 'project-tab-bar-active-face 'project-tab-bar-inactive-face))
          (session-indicator (if (and has-session project-tab-bar-show-session-indicator)
-                               (propertize "●" 'face 'project-tab-bar-session-indicator-face)
+                               (cond
+                                ((> has-session 1)
+                                 (propertize (format "%d●" has-session) 
+                                           'face 'project-tab-bar-session-indicator-face))
+                                (t
+                                 (propertize "●" 'face 'project-tab-bar-session-indicator-face)))
                              " "))
          (tab-text (format " %s%s " session-indicator truncated-name)))
     
@@ -120,7 +127,10 @@
                 'mouse-face 'highlight
                 'help-echo (format "Switch to project: %s%s" 
                                   project-name
-                                  (if has-session " (has Claude session)" ""))
+                                  (cond
+                                   ((> has-session 1) (format " (%d Claude sessions)" has-session))
+                                   (has-session " (has Claude session)")
+                                   (t "")))
                 'local-map (let ((map (make-sparse-keymap)))
                             (define-key map [header-line mouse-1] 
                               `(lambda () (interactive) 
@@ -170,14 +180,39 @@
 
 (defun project-tab-bar--deploy-claude-sessions (project-root)
   "Deploy Claude Code sessions for PROJECT-ROOT."
-  ;; Placeholder for Claude session deployment
-  ;; This will be implemented when claude-code frame integration is ready
-  (let ((session-data (gethash project-root project-tab-bar--project-sessions)))
-    (when session-data
-      (message "Deploying Claude sessions for project: %s" 
-               (project-tab-bar--get-project-name project-root))
-      ;; TODO: Integrate with claude-code session management
-      )))
+  (when (featurep 'claude-code)
+    (let ((claude-buffers (claude-code--find-claude-buffers-for-directory project-root)))
+      (cond
+       ;; Multiple sessions - show them all or prompt for selection
+       ((> (length claude-buffers) 1)
+        (message "Found %d Claude sessions for %s" 
+                 (length claude-buffers)
+                 (project-tab-bar--get-project-name project-root))
+        ;; Display the first (default) session and show others in background
+        (let ((default-session (car claude-buffers)))
+          (display-buffer default-session)
+          (message "Showing default session. Use C-c c B to switch between %d sessions"
+                   (length claude-buffers))))
+       
+       ;; Single session - display it
+       ((= (length claude-buffers) 1)
+        (let ((session-buffer (car claude-buffers)))
+          (display-buffer session-buffer)
+          (message "Activated Claude session for %s" 
+                   (project-tab-bar--get-project-name project-root))))
+       
+       ;; No existing sessions - offer to create one
+       (t
+        (when (y-or-n-p (format "No Claude sessions found for %s. Start new session? "
+                                (project-tab-bar--get-project-name project-root)))
+          (let ((default-directory project-root))
+            ;; Start new claude session in this project
+            (claude-code)
+            (message "Started new Claude session for %s" 
+                     (project-tab-bar--get-project-name project-root))))))
+      
+      ;; Always refresh tab bar to update session indicators
+      (project-tab-bar--refresh))))
 
 (defun project-tab-bar--refresh ()
   "Refresh the project tab bar display."
@@ -193,7 +228,11 @@
   
   ;; Hook into projectile for automatic updates
   (add-hook 'projectile-after-switch-project-hook #'project-tab-bar--refresh)
-  (add-hook 'projectile-find-file-hook #'project-tab-bar--refresh))
+  (add-hook 'projectile-find-file-hook #'project-tab-bar--refresh)
+  
+  ;; Hook into claude-code for session tracking
+  (when (featurep 'claude-code)
+    (add-hook 'claude-code-start-hook #'project-tab-bar--refresh)))
 
 (defun project-tab-bar--teardown ()
   "Tear down project tab bar."
@@ -201,7 +240,9 @@
   
   ;; Remove hooks
   (remove-hook 'projectile-after-switch-project-hook #'project-tab-bar--refresh)
-  (remove-hook 'projectile-find-file-hook #'project-tab-bar--refresh))
+  (remove-hook 'projectile-find-file-hook #'project-tab-bar--refresh)
+  (when (featurep 'claude-code)
+    (remove-hook 'claude-code-start-hook #'project-tab-bar--refresh)))
 
 ;;;###autoload
 (define-minor-mode project-tab-bar-mode
