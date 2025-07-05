@@ -64,6 +64,11 @@
   "Face for Claude session indicator."
   :group 'project-tab-bar)
 
+(defface project-tab-bar-scroll-face
+  '((t :background "#2196F3" :foreground "white" :weight bold))
+  "Face for scroll indicators when hovered."
+  :group 'project-tab-bar)
+
 ;;;; Internal Variables
 
 (defvar project-tab-bar--current-project nil
@@ -95,10 +100,16 @@
 
 (defun project-tab-bar--calculate-available-width ()
   "Calculate available width for project tabs in current frame."
-  (let ((frame-width (frame-width))
-        (prefix-width (length " Projects: "))
-        (separator-width 1))  ; For each "│" separator
-    (- frame-width prefix-width (* (1- (length project-tab-bar--project-list)) separator-width))))
+  (let* ((frame-width (frame-width))
+         (prefix-width (length " Projects: "))
+         (visible-count (min (length project-tab-bar--project-list)
+                            (/ (- frame-width prefix-width 4) project-tab-bar-tab-width))) ; Reserve space for scroll indicators
+         (separator-width (* (1- visible-count) 1))  ; For each "│" separator between visible tabs
+         (scroll-indicator-width (if (and project-tab-bar-enable-scrolling 
+                                         (> (length project-tab-bar--project-list) visible-count))
+                                    2  ; Space for ◀ ▶ 
+                                  0)))
+    (- frame-width prefix-width separator-width scroll-indicator-width)))
 
 
 (defun project-tab-bar--has-claude-session-p (project-root)
@@ -176,15 +187,32 @@
              (prefix (propertize " Projects: " 'face 'bold))
              (scroll-left-indicator (if (and project-tab-bar-enable-scrolling 
                                            (> project-tab-bar--scroll-offset 0))
-                                      (propertize "◀" 'face 'bold 'help-echo "Scroll left")
+                                      (propertize "◀" 'face 'bold 'help-echo "Scroll left"
+                                                 'mouse-face 'project-tab-bar-scroll-face
+                                                 'local-map (let ((map (make-sparse-keymap)))
+                                                              (define-key map [header-line mouse-1] 
+                                                                #'project-tab-bar-scroll-left)
+                                                              map))
                                     ""))
              (scroll-right-indicator (if (and project-tab-bar-enable-scrolling
                                             (< (+ project-tab-bar--scroll-offset visible-count)
                                                (length project-tab-bar--project-list)))
-                                       (propertize "▶" 'face 'bold 'help-echo "Scroll right")
+                                       (propertize "▶" 'face 'bold 'help-echo "Scroll right"
+                                                  'mouse-face 'project-tab-bar-scroll-face
+                                                  'local-map (let ((map (make-sparse-keymap)))
+                                                               (define-key map [header-line mouse-1] 
+                                                                 #'project-tab-bar-scroll-right)
+                                                               map))
                                      ""))
-             (tab-string (mapconcat #'identity tabs "│")))
-        (concat prefix scroll-left-indicator tab-string scroll-right-indicator))
+             (tab-string (mapconcat #'identity tabs "│"))
+             (tab-area (propertize tab-string 
+                                  'local-map (let ((map (make-sparse-keymap)))
+                                               (define-key map [header-line wheel-up] 
+                                                 #'project-tab-bar-scroll-left)
+                                               (define-key map [header-line wheel-down] 
+                                                 #'project-tab-bar-scroll-right)
+                                               map))))
+        (concat prefix scroll-left-indicator tab-area scroll-right-indicator))
     (propertize " No projects " 'face 'italic)))
 
 ;;;; Public API
@@ -320,7 +348,7 @@ be clicked to switch projects and deploy associated Claude Code sessions."
 
 ;;;###autoload
 (defun project-tab-bar-scroll-left ()
-  "Scroll project tabs to the left."
+  "Scroll project tabs to the left by one tab."
   (interactive)
   (when (and project-tab-bar-enable-scrolling (> project-tab-bar--scroll-offset 0))
     (setq project-tab-bar--scroll-offset (max 0 (1- project-tab-bar--scroll-offset)))
@@ -328,19 +356,24 @@ be clicked to switch projects and deploy associated Claude Code sessions."
 
 ;;;###autoload
 (defun project-tab-bar-scroll-right ()
-  "Scroll project tabs to the right."
+  "Scroll project tabs to the right by one tab."
   (interactive)
   (when (and project-tab-bar-enable-scrolling project-tab-bar--project-list)
-    (let ((max-offset (max 0 (- (length project-tab-bar--project-list) 
-                               (project-tab-bar--calculate-visible-tab-count)))))
+    (let* ((visible-count (project-tab-bar--calculate-visible-tab-count))
+           (total-count (length project-tab-bar--project-list))
+           (max-offset (max 0 (- total-count visible-count))))
       (when (< project-tab-bar--scroll-offset max-offset)
-        (setq project-tab-bar--scroll-offset (1+ project-tab-bar--scroll-offset))
+        (setq project-tab-bar--scroll-offset (min max-offset (1+ project-tab-bar--scroll-offset)))
         (project-tab-bar--refresh)))))
 
 (defun project-tab-bar--calculate-visible-tab-count ()
   "Calculate how many tabs can fit in the current frame width."
-  (let ((available-width (project-tab-bar--calculate-available-width)))
-    (max 1 (/ available-width project-tab-bar-tab-width))))
+  (let* ((frame-width (frame-width))
+         (prefix-width (length " Projects: "))
+         (scroll-space 4) ; Reserve space for potential ◀ ▶ indicators
+         (usable-width (- frame-width prefix-width scroll-space))
+         (tab-and-separator-width (1+ project-tab-bar-tab-width))) ; tab + separator
+    (max 1 (/ usable-width tab-and-separator-width))))
 
 ;;;###autoload
 (defun project-tab-bar-next-project ()
