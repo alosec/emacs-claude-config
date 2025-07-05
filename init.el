@@ -1,6 +1,11 @@
 ;; Streamlined Emacs configuration for Debian
 ;; Based on original from Thu Jul 29, 2021
 
+(global-visual-line-mode 1)
+
+;; Disable the welcome screen
+(setq inhibit-startup-screen t)
+
 ;; Silence warnings
 (setq byte-compile-warnings '(not cl-functions obsolete free-vars unresolved noruntime lexical make-local))
 
@@ -230,10 +235,8 @@
 
 ;; Set theme conditionally based on GUI
 (when (display-graphic-p)
-  (load-theme 'deeper-blue t)
-  ;; Keep custom-set-variables theme preference for terminal mode
-  (when (not (display-graphic-p))
-    (load-theme 'wheatgrass t)))
+  (load-theme 'deeper-blue t))
+;; No theme loading for terminal mode
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ASTRO MODE CONFIGURATION
@@ -409,18 +412,45 @@
                     (org-agenda nil "a")
                     (message "Time-Oriented View"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; CLAUDE-CODE.EL CONFIGURATION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Add claude-code to load path
+(add-to-list 'load-path (expand-file-name "site-lisp/claude-code" user-emacs-directory))
+
+;; Load and configure claude-code
+(use-package claude-code
+  :ensure nil  ; We installed it manually
+  :demand t    ; Load immediately
+  :config
+  ;; Enable claude-code-mode
+  (claude-code-mode 1)
+  
+  ;; Basic configuration
+  (setq claude-code-terminal-backend 'eat)  ; Use EAT terminal (correct variable name)
+  
+  ;; Optional: Set default Claude Code CLI path if not in PATH
+  ;; (setq claude-code-program "claude-code")
+  
+  :bind-keymap
+  ;; Bind the entire command map to C-c c prefix
+  ("C-c c" . claude-code-command-map))
+
 ;; Custom-set-variables maintained from original ~/.emacs
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-enabled-themes '(deeper-blue))
+ '(custom-enabled-themes (if (display-graphic-p) '(deeper-blue) nil))
  '(package-selected-packages
-   '(org-super-agenda lsp-mode eglot web-mode helm helm-swoop helm-projectile projectile vmd-mode eww-lnum markdown-preview-eww markdown-mode use-package)))
+   '(eat eglot eww-lnum helm helm-projectile helm-swoop lsp-mode
+	 markdown-mode markdown-preview-eww org-super-agenda
+	 projectile use-package vmd-mode web-mode)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(org-super-agenda-header ((t (:inherit default :height 1.2 :weight bold :foreground "dodger blue" :background "#f0f0f0" :box (:line-width 2 :color "grey75" :style released-button))))))
