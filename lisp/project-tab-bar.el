@@ -89,7 +89,8 @@
 (defun project-tab-bar--update-project-list ()
   "Update the list of projects for tab display."
   (let ((known-projects (projectile-relevant-known-projects))
-        (current-project (projectile-project-root)))
+        (current-project (or project-tab-bar--current-project  ; Respect manually set project
+                            (projectile-project-root))))       ; Fall back to projectile detection
     
     ;; Add current project to front if not already there
     (when current-project
@@ -101,8 +102,9 @@
           (cl-subseq known-projects 0 (min (length known-projects) 
                                           project-tab-bar-max-tabs)))
     
-    ;; Update current project
-    (setq project-tab-bar--current-project current-project)))
+    ;; Only update current project if we don't have a manual selection
+    (unless project-tab-bar--current-project
+      (setq project-tab-bar--current-project current-project))))
 
 (defun project-tab-bar--create-tab (project-root)
   "Create a tab string for PROJECT-ROOT."
