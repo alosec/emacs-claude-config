@@ -100,15 +100,6 @@
         (separator-width 1))  ; For each "│" separator
     (- frame-width prefix-width (* (1- (length project-tab-bar--project-list)) separator-width))))
 
-(defun project-tab-bar--calculate-optimal-tab-width ()
-  "Calculate optimal tab width based on available space and number of tabs."
-  (if (null project-tab-bar--project-list)
-      project-tab-bar-tab-width
-    (let* ((available-width (project-tab-bar--calculate-available-width))
-           (tab-count (length project-tab-bar--project-list))
-           (optimal-width (/ available-width tab-count)))
-      (max project-tab-bar-min-tab-width
-           (min project-tab-bar-tab-width optimal-width)))))
 
 (defun project-tab-bar--has-claude-session-p (project-root)
   "Check if PROJECT-ROOT has an associated Claude session."
@@ -136,12 +127,11 @@
     (unless project-tab-bar--current-project
       (setq project-tab-bar--current-project current-project))))
 
-(defun project-tab-bar--create-tab (project-root &optional tab-width)
-  "Create a tab string for PROJECT-ROOT with optional TAB-WIDTH."
+(defun project-tab-bar--create-tab (project-root)
+  "Create a tab string for PROJECT-ROOT."
   (let* ((project-name (project-tab-bar--get-project-name project-root))
-         (effective-tab-width (or tab-width (project-tab-bar--calculate-optimal-tab-width)))
          (truncated-name (project-tab-bar--truncate-name project-name 
-                                                        (- effective-tab-width 4))) ; Account for indicators and spacing
+                                                        (- project-tab-bar-tab-width 4))) ; Account for indicators and spacing
          (is-active (string= project-root project-tab-bar--current-project))
          (has-session (project-tab-bar--has-claude-session-p project-root))
          (face (if is-active 'project-tab-bar-active-face 'project-tab-bar-inactive-face))
@@ -182,10 +172,7 @@
                                            (min (length project-tab-bar--project-list)
                                                 (+ project-tab-bar--scroll-offset visible-count)))
                                project-tab-bar--project-list))
-             (optimal-width (project-tab-bar--calculate-optimal-tab-width))
-             (tabs (mapcar (lambda (project) 
-                            (project-tab-bar--create-tab project optimal-width)) 
-                          visible-projects))
+             (tabs (mapcar #'project-tab-bar--create-tab visible-projects))
              (prefix (propertize " Projects: " 'face 'bold))
              (scroll-left-indicator (if (and project-tab-bar-enable-scrolling 
                                            (> project-tab-bar--scroll-offset 0))
@@ -352,9 +339,8 @@ be clicked to switch projects and deploy associated Claude Code sessions."
 
 (defun project-tab-bar--calculate-visible-tab-count ()
   "Calculate how many tabs can fit in the current frame width."
-  (let ((available-width (project-tab-bar--calculate-available-width))
-        (tab-width (project-tab-bar--calculate-optimal-tab-width)))
-    (max 1 (/ available-width tab-width))))
+  (let ((available-width (project-tab-bar--calculate-available-width)))
+    (max 1 (/ available-width project-tab-bar-tab-width))))
 
 ;;;###autoload
 (defun project-tab-bar-next-project ()
